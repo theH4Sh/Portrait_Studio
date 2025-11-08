@@ -1,6 +1,7 @@
 const express = require('express')
 const Product = require('../models/Product')
 const mongoose = require('mongoose')
+const upload = require('../middleware/upload')
 
 const router = express.Router()
 
@@ -61,15 +62,19 @@ router.delete('/product/:id', async (req, res, next) => {
     }   
 })
 
-router.post('/product', async (req, res, next) => {
+router.post('/product', upload.single('productImage'), async (req, res, next) => {
     try {
-        const { name, price, description, image } = req.body
+        const { name, price, description } = req.body
+
+        if (!req.file) {
+            return res.status(400).json({error: 'Product Image Required'})
+        }
 
         const newProduct = new Product({
             name,
             price,
             description,
-            image
+            image: req.file.filename
         })
         
         await newProduct.save()
