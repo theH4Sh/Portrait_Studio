@@ -1,8 +1,12 @@
 const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
 
-const createToken = (_id) => {
-    return jwt.sign({_id}, process.env.SECRET, { expiresIn: '3d'})
+const createToken = (user) => {
+    return jwt.sign({
+        _id: user._id,
+        username: user.username,
+        role: user.role
+    }, process.env.SECRET, { expiresIn: '3d'})
 }
 
 const loginUser = async (req, res, next) => {
@@ -15,7 +19,7 @@ const loginUser = async (req, res, next) => {
         const username = user.username
 
         //token
-        const token = createToken(user._id)
+        const token = createToken(user)
 
         res.status(200).json({ username, password, token, role })
     } catch (error) {
@@ -30,7 +34,7 @@ const signUpUser = async (req, res, next) => {
         const user = await User.signup(username, email, password)
 
         //token
-        const token = createToken(user._id)
+        const token = createToken(user)
 
         res.status(201).json({ username, email, token, message: `${username} registered successfully` })
     } catch (error) {
