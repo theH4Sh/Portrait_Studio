@@ -1,5 +1,6 @@
 const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
+const transporter = require('../utils/mailer')
 
 const createToken = (user) => {
     return jwt.sign({
@@ -21,7 +22,7 @@ const loginUser = async (req, res, next) => {
         //token
         const token = createToken(user)
 
-        res.status(200).json({ username, password, token, role })
+        res.status(200).json({ username, token, role })
     } catch (error) {
         next(error)
     }
@@ -36,7 +37,22 @@ const signUpUser = async (req, res, next) => {
         //token
         const token = createToken(user)
 
-        res.status(201).json({ username, email, token, message: `${username} registered successfully` })
+        const verificationLink = `http://localhost:8000/api/auth/verify/${token}`
+
+
+        const mail = await transporter.sendMail({
+        from: `"MyApp" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'Verify your email',
+        html: `
+            <h2>Welcome ${user.username}!</h2>
+            <p>Click below to verify your account:</p>
+            <a href="${verificationLink}">${verificationLink}</a>
+        `,
+        });
+        console.log("mail: ", mail)
+
+        res.status(201).json({ message: `${username} registered successfully. Please check your email and verify`, token })
     } catch (error) {
         next(error)
     }
@@ -56,4 +72,28 @@ const getUser = async (req, res, next) => {
     }
 }
 
-module.exports = { loginUser, signUpUser, getUser }
+const verifyEmail = async (req, res, next) => {
+    try {
+        const { token } = req.params
+        const decoded = jwt.verify(token, process.env.SECRET)
+        console.log(decoded)
+        const user = await User.findById(decoded._id)
+        console.log(user)
+        if (!user) return res.status(400).json({ error: "Invalid Token" })
+
+        if (user.isVerified) {
+            console.log("verified")
+            return res.status(200).json({ message: "Already Verified" })
+        }
+
+        user.isVerified = true
+        await user.save()
+
+        res.status(200).json({ message: "Email verified successfully"})
+    } catch (error) {
+        console.log("Verification failed")
+        next(error)
+    }
+}
+
+module.exports = { loginUser, signUpUser, getUser, verifyEmail }
