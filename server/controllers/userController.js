@@ -1,6 +1,7 @@
 const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
 const transporter = require('../utils/mailer')
+const bcrypt = require('bcrypt')
 
 const createToken = (user) => {
     return jwt.sign({
@@ -35,7 +36,7 @@ const signUpUser = async (req, res, next) => {
         const user = await User.signup(username, email, password)
 
         //token
-        const token = createToken(user)
+        const token = jwt.sign({ _id: user._id }, process.env.SECRET, { expiresIn: '1h' });
 
         const verificationLink = `http://localhost:8000/api/auth/verify/${token}`
 
@@ -96,4 +97,50 @@ const verifyEmail = async (req, res, next) => {
     }
 }
 
-module.exports = { loginUser, signUpUser, getUser, verifyEmail }
+const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body
+
+        const user = await User.findOne({ email })
+        if (!user) return res.status(404).json({ message: "Email not found" })
+
+        const token = jwt.sign({ _id: user._id }, process.env.SECRET, { expiresIn: '1h' });
+        const resetLink = `http://localhost:8000/api/auth/reset-password/${token}`
+
+        const mail = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Password Reset Request',
+            html: `<p>Click the link to reset your password:</p>
+             <a href="${resetLink}">${resetLink}</a>
+             <p>This link expires in 15 minutes.</p>`
+        }
+
+        await transporter.sendMail(mail)
+        res.status(200).json({ message: "Password reset link sent to your email" })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const resetPassword = async (req, res, next) => {
+    try {
+        const { token } = req.params
+        const { newPassword } = req.body
+
+        if (!newPassword) return res.status(400).json({ error: "New password is required" })
+
+        const decoded = jwt.verify(token, process.env.SECRET)
+        const user = await User.findById(decoded._id)
+        if (!user) return res.status(404).json({ error: 'Invalid token'})
+
+        const salt = await bcrypt.genSalt(10)
+        user.password = await bcrypt.hash(newPassword, salt)
+        await user.save()
+
+        res.status(200).json({ message: "Password has been reset successfully" })
+    } catch (error) {
+        next(error)
+    }
+}
+module.exports = { loginUser, signUpUser, getUser, verifyEmail, forgotPassword, resetPassword }
