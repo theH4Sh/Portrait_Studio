@@ -6,6 +6,7 @@ require('dotenv').config()
 const productRoutes = require('./routes/productRoutes')
 const userRoutes = require('./routes/userRoutes')
 const bookingRoutes = require('./routes/bookingRoutes')
+const orderRoutes = require('./routes/orderRoutes')
 
 //models
 const Product = require("./models/Product")
@@ -27,6 +28,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api', productRoutes)
 app.use('/api/auth', userRoutes)
 app.use('/api/booking', bookingRoutes)
+app.use('/api/order', orderRoutes)
 
 //Error Handling
 app.use((err, req, res, next) => {

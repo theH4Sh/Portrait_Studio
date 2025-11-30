@@ -64,7 +64,7 @@ router.delete('/product/:id', async (req, res, next) => {
 
 router.post('/product', upload.single('productImage'), async (req, res, next) => {
     try {
-        const { name, price, description } = req.body
+        const { name, pricePerDay, description, quantity, isActive } = req.body
 
         if (!req.file) {
             return res.status(400).json({error: 'Product Image Required'})
@@ -72,9 +72,11 @@ router.post('/product', upload.single('productImage'), async (req, res, next) =>
 
         const newProduct = new Product({
             name,
-            price,
+            pricePerDay,
             description,
-            image: req.file.filename
+            quantity,
+            image: req.file.filename,
+            isActive
         })
         
         await newProduct.save()
