@@ -7,6 +7,7 @@ const productRoutes = require('./routes/productRoutes')
 const userRoutes = require('./routes/userRoutes')
 const bookingRoutes = require('./routes/bookingRoutes')
 const orderRoutes = require('./routes/orderRoutes')
+const portfolioRoutes = require('./routes/portfolioRoutes')
 
 //models
 const Product = require("./models/Product")
@@ -29,6 +30,7 @@ app.use('/api', productRoutes)
 app.use('/api/auth', userRoutes)
 app.use('/api/booking', bookingRoutes)
 app.use('/api/order', orderRoutes)
+app.use('/api/portfolio', portfolioRoutes)
 
 //Error Handling
 app.use((err, req, res, next) => {
